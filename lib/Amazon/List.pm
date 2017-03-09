@@ -93,4 +93,27 @@ sub _extract_next_page_url {
     return URI->new_abs( $a_elt->attr( 'href' ), $url )->as_string();
 }
 
+sub get_items {
+
+    my ( $self, $url, $delay ) = @_;
+
+    defined $delay or $delay = 3; # default delay between pages in seconds
+
+    my @items;
+  PAGE:
+    while ( 1 ) {
+	my $tree = $self->_get_html_tree( $url );
+	my @divs = $tree->look_down( _tag => 'div', id => qr/^itemInfo_/ );
+	if ( @divs ) {
+	    push @items, $self->_extract_item( $_ ) for @divs;
+	    $url = $self->_extract_next_page_url( $tree, $url );
+	}
+	$tree->delete();
+
+	last PAGE if ! @divs or ! defined $url;
+	sleep( $delay );
+    }
+    return \@items;
+}
+
 1;
