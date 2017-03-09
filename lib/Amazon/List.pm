@@ -5,6 +5,7 @@ use warnings;
 
 use Carp;
 
+use URI;
 use LWP::UserAgent;
 use HTML::TreeBuilder;
 use HTTP::Status ':constants';
@@ -73,6 +74,23 @@ sub _extract_item {
 	$item{ price } = undef;
     }
     return \%item;
+}
+
+sub _extract_next_page_url {
+
+    my ( $self, $tree, $url ) = @_;
+
+    my $li = $tree->look_down( _tag => 'li', class => 'a-last' );
+    defined $li or return;
+
+    my $a_elt = $li->look_down( _tag => 'a' );
+    defined $a_elt or return;
+
+    my $href = $a_elt->attr( 'href' );
+    defined $href or return;
+
+    # Always convert href to an absolute URL using the current page URL as base
+    return URI->new_abs( $a_elt->attr( 'href' ), $url )->as_string();
 }
 
 1;
